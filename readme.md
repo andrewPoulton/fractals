@@ -5,3 +5,5 @@ Uses leaflet.js to render a Mandlebrot plot as a tile layer. Tiles are generated
 ## License
 
 MIT
+
+All credit goes to https://github.com/richorama/frac-js
