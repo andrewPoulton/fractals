@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+    <head>
+        <meta charset="utf-8" />
+        <title>frac-js</title>
+
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.3.3/dist/leaflet.css" integrity="sha512-Rksm5RenBEKSKFjgI3a41vrjkw4EVPlJ3+OiI65vTjIdo9brlAacEuKOiQ5OFh7cOI1bkDwLqdLw3Zg0cRJAAQ==" crossorigin=""/>
+        <script src="https://unpkg.com/leaflet@1.3.3/dist/leaflet.js" integrity="sha512-tAGcCfR4Sc5ZP5ZoVz0quoZDYX5aCtEm/eu1KhSLj2c9eFrylXZknQYmxUssFaVJKvvc0dJQixhGjG2yXWiV9Q==" crossorigin=""></script>
+      <style>
+
+        #map {
+            position: absolute;
+            top: 0;
+            left: 0;                                    
+            width: 100vw;
+            height: 100vh;
+        }
+
+        </style>
+
+    </head>
+    <body onload="go()">
+        <div id="map"></div>
+
+        <script>
+
+const workDistribution = function(options){
+    let queue = [];
+    const pool = [];
+    if (!options) options = {};
+
+    // set up workers
+    for (var i = 0; i < (options.concurrency || 4); i++){
+        const worker = new Worker(options.src);
+        worker.onmessage = function(e){
+            worker.working = false;
+            if (options.oncomplete) options.oncomplete(e);
+            schedule();
+        };
+        worker.working = false;
+        pool.push(worker);
+    }
+
+    // execute the next item of work
+    const schedule = function(){
+        if (!queue.length) return;
+        const nextWorker = pool.filter(x => !x.working)[0]
+        if (!nextWorker) return;
+
+        // remove tiles from the queue that have already been unloaded
+        queue = queue.filter(item => tiles[item.id]);
+        if (!queue.length) return;
+
+        var item = queue.pop();
+        nextWorker.working = true;
+        nextWorker.postMessage(item);
+    }
+
+    return {
+        push : function(item, cb){
+            queue.push(item);
+            schedule();
+        }
+    };
+}
+
+const options = {
+    centre: [-128,128],
+    tileSize : 256,
+    depth : 48 // precision is lost at any greater level
+}
+
+const tiles = {};
+var id = 0;
+
+function workerComplete(event){
+    var tile = tiles[event.data.id]
+    if (!tile) return;
+
+    const canvas = document.createElement("canvas");
+    canvas.width = options.tileSize;
+    canvas.height = options.tileSize;
+
+    const ctx = canvas.getContext("2d");
+    ctx.putImageData(event.data.imageData, 0, 0);
+
+    tile.src = canvas.toDataURL();
+    delete tiles[event.data.id];
+}
+
+function go(){
+    var workPoolManager = workDistribution({
+        oncomplete : workerComplete,
+        concurrency : navigator.hardwareConcurrency * 2,
+        src : 'worker.js'
+    });
+        
+    const map = L.map('map', {crs: L.CRS.Simple}).setView(options.centre, Math.min(2, options.depth));
+
+    L.TileLayer.Fractal = L.TileLayer.extend({
+        initialize:function(){
+            this.on('tileunload', this._tileUnload);
+        },
+        _tileUnload:function(ev){
+            delete tiles[ev.tile.id];
+        },
+        setType:function(value){
+            this._type = value;
+        },
+        getAttribution: function() {
+            return "<a href='https://github.com/richorama/frac-js'>frac-js</a>"
+        },
+        createTile:function(coords, done){
+            const tile = document.createElement('img');
+
+            L.DomEvent.on(tile, 'load', L.Util.bind(this._tileOnLoad, this, done, tile));
+            L.DomEvent.on(tile, 'error', L.Util.bind(this._tileOnError, this, done, tile));
+          
+            if (this.options.crossOrigin) tile.crossOrigin = '';
+
+            tile.alt = '';
+            tile.id = (id++).toString();
+            tile.setAttribute('role', 'presentation');
+
+            // store a reference to the tile for future use
+            tiles[tile.id] = tile;
+            
+            workPoolManager.push({coords:coords, id:tile.id, type : (this._type || 'mandlebrot')});
+            return tile;
+        }
+    });
+
+    L.tileLayer.mandlebrot = () => {
+        var layer = new L.TileLayer.Fractal();
+        layer.setType('mandlebrot');
+        return layer;
+    }
+    
+    const mandlebrot = L.tileLayer.mandlebrot().addTo(map);
+
+    L.tileLayer.julia = () => {
+        var layer = new L.TileLayer.Fractal();
+        layer.setType('julia');
+        return layer;
+    }
+    
+    const julia = L.tileLayer.julia();
+
+
+        L.tileLayer.ship = () => {
+        var layer = new L.TileLayer.Fractal();
+        layer.setType('ship');
+        return layer;
+    }
+    
+    const ship = L.tileLayer.ship();
+
+
+    L.control.layers({mandlebrot, julia, ship}).addTo(map);
+
+    function hov(e){
+        var layer = new L.TileLayer.Fractal();
+        // debugger
+        var c = e.layerPoint
+        console.log(c)
+        // debugger
+        c.x = c.x  * (4/window.innerWidth) - 2
+        c.y = c.y  * (4/window.innerHeight) - 2
+        layer.setType('custom_' + c.x + '_' + c.y);
+        layer.addTo(this);
+    }
+    map.on('click', hov)
+    // map.on('mouseout', hov)
+}
+
+        </script>
+
+    </body>
+</html>
