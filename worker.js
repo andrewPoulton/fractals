@@ -1,7 +1,7 @@
 onmessage = function(e) {
-    var imageData = draw(e.data.coords.x, e.data.coords.y, e.data.coords.z, e.data.type);
+    var Data = draw(e.data.coords.x, e.data.coords.y, e.data.coords.z, e.data.type);
     
-    postMessage({id:e.data.id, imageData: imageData});
+    postMessage({id:e.data.id, imageData: Data[0], C:Data[1]});
 }
 
 const settings = {
@@ -31,6 +31,7 @@ function draw(x, y, z, type){
 		// debugger
 		C = type.split('_')
 		C = {R:parseFloat(C[1]), I:parseFloat(C[2])}
+		// console.log(C)
 		 renderingFunction = renderingFunctions.custom
 	} else {
 		 renderingFunction = renderingFunctions[type || 'mandlebrot'];
@@ -55,7 +56,7 @@ function draw(x, y, z, type){
         }
 	}
 	
-	return imageData;
+	return [imageData,C];
 }
 
 const renderingFunctions = {};

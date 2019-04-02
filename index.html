@@ -14,13 +14,28 @@
             left: 0;                                    
             width: 100vw;
             height: 100vh;
+            z-index: -1;
+        }
+        #coords {
+            position: fixed;
+            top: 0;
+            left: 150px;
+            margin: 0 auto;
+            /* background-color: white; */
+            height:30px;
+            width: 600px;
+            z-index: 1;
+            overflow: visible;
         }
 
         </style>
 
     </head>
     <body onload="go()">
-        <div id="map"></div>
+        <div id="coords"></div>
+        <div id="map">
+        </div>
+        
 
         <script>
 
@@ -83,7 +98,7 @@ function workerComplete(event){
 
     const ctx = canvas.getContext("2d");
     ctx.putImageData(event.data.imageData, 0, 0);
-
+    // console.log(event.data.C)
     tile.src = canvas.toDataURL();
     delete tiles[event.data.id];
 }
@@ -130,21 +145,23 @@ function go(){
         }
     });
 
-    L.tileLayer.mandlebrot = () => {
-        var layer = new L.TileLayer.Fractal();
-        layer.setType('mandlebrot');
-        return layer;
-    }
-    
-    const mandlebrot = L.tileLayer.mandlebrot().addTo(map);
-
     L.tileLayer.julia = () => {
         var layer = new L.TileLayer.Fractal();
         layer.setType('julia');
         return layer;
     }
     
-    const julia = L.tileLayer.julia();
+    const julia = L.tileLayer.julia().addTo(map);
+
+
+    L.tileLayer.mandlebrot = () => {
+        var layer = new L.TileLayer.Fractal();
+        layer.setType('mandlebrot');
+        return layer;
+    }
+    
+    const mandlebrot = L.tileLayer.mandlebrot();
+
 
 
         L.tileLayer.ship = () => {
@@ -156,21 +173,36 @@ function go(){
     const ship = L.tileLayer.ship();
 
 
-    L.control.layers({mandlebrot, julia, ship}).addTo(map);
+    L.control.layers({julia, mandlebrot, ship}).addTo(map);
 
-    function hov(e){
+    function click_custom(e){
         var layer = new L.TileLayer.Fractal();
         // debugger
         var c = e.layerPoint
-        console.log(c)
+        
         // debugger
         c.x = c.x  * (4/window.innerWidth) - 2
         c.y = c.y  * (4/window.innerHeight) - 2
         layer.setType('custom_' + c.x + '_' + c.y);
         layer.addTo(this);
+        console.log(c)
     }
-    map.on('click', hov)
-    // map.on('mouseout', hov)
+    function hov(e){
+        // var layer = new L.TileLayer.Fractal();
+        // debugger
+        var c = e.layerPoint
+        
+        // debugger
+        c.x = c.x  * (4/window.innerWidth) - 2
+        c.y = c.y  * (4/window.innerHeight) - 2
+        // layer.setType('custom_' + c.x + '_' + c.y);
+        // layer.addTo(this);
+        console.log(c)
+        document.getElementById('coords').innerHTML = 'C = ' + (Math.round(c.x * 100) / 100) + ' + ' + (Math.round(c.y * 100) / 100) + 'i'
+    }
+    // debugger
+    map.on('click', click_custom)
+    map.on('mousemove', hov)
 }
 
         </script>
