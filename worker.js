@@ -26,7 +26,7 @@ function draw(x, y, z, type){
     const y1 = (settings.maxY - settings.minY) * (y - (numberOfTiles / 2)) / numberOfTiles;
 	const pixelSize = (settings.maxX - settings.minX) / (numberOfTiles * settings.tileSize);
 	var renderingFunction
-	var C
+	var C = {R:settings.CR, I:settings.CI}
 	if (type.startsWith('custom')){
 		// debugger
 		C = type.split('_')

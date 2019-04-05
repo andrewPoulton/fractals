@@ -28,11 +28,26 @@
             overflow: visible;
         }
 
+
+        #viewcoords {
+            position: fixed;
+            top: 0;
+            left: 500px;
+            margin: 0 auto;
+            /* background-color: white; */
+            height:30px;
+            width: 600px;
+            z-index: 1;
+            overflow: visible;
+            color: white;
+        }
+
         </style>
 
     </head>
     <body onload="go()">
         <div id="coords"></div>
+        <div id="viewcoords"></div></div>
         <div id="map">
         </div>
         
@@ -99,6 +114,8 @@ function workerComplete(event){
     const ctx = canvas.getContext("2d");
     ctx.putImageData(event.data.imageData, 0, 0);
     // console.log(event.data.C)
+    var c = event.data.C
+    document.getElementById('viewcoords').innerHTML = 'C = ' + (Math.round(c.R * 100) / 100) + ' + ' + (Math.round(c.I * 100) / 100) + 'i'
     tile.src = canvas.toDataURL();
     delete tiles[event.data.id];
 }
@@ -106,7 +123,7 @@ function workerComplete(event){
 function go(){
     var workPoolManager = workDistribution({
         oncomplete : workerComplete,
-        concurrency : navigator.hardwareConcurrency * 2,
+        concurrency : navigator.hardwareConcurrency/2,
         src : 'worker.js'
     });
         
@@ -197,7 +214,7 @@ function go(){
         c.y = c.y  * (4/window.innerHeight) - 2
         // layer.setType('custom_' + c.x + '_' + c.y);
         // layer.addTo(this);
-        console.log(c)
+        // console.log(c)
         document.getElementById('coords').innerHTML = 'C = ' + (Math.round(c.x * 100) / 100) + ' + ' + (Math.round(c.y * 100) / 100) + 'i'
     }
     // debugger
